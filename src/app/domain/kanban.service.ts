@@ -26,16 +26,16 @@ export class KanbanService {
     this.title.next(title);
   }
 
+  updateBoardTitle(title: string) {
+    this.repository.updateBoardTitle(title);
+    this.title.next(title);
+  }
+
   createColumn() {
     const columns = this.repository.createColumn(
       this.columns.getValue().length
     );
     this.columns.next(columns);
-  }
-
-  updateBoardTitle(title: string) {
-    this.repository.updateBoardTitle(title);
-    this.title.next(title);
   }
 
   updateColumnTitle(newTitle: string, columnId: string) {
@@ -47,6 +47,16 @@ export class KanbanService {
     const subjColumn = columns[index];
     subjColumn.title = newTitle;
     const updatedColumns = this.repository.updateColumn(subjColumn);
+    this.columns.next(this.sort(updatedColumns) as Array<Column>);
+  }
+
+  deleteColumn(columnId: string) {
+    const columns = this.columns.getValue();
+    const index = columns.findIndex((c) => c.id === columnId);
+    if (index === -1) {
+      return;
+    }
+    const updatedColumns = this.repository.deleteColumn(columnId);
     this.columns.next(this.sort(updatedColumns) as Array<Column>);
   }
 

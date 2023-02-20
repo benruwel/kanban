@@ -3,7 +3,7 @@ import { nanoid } from 'nanoid';
 
 import { Column, Task } from './kanban';
 
-@Injectable()
+@Injectable({ providedIn: 'root' })
 export class KanbanRepository {
   private readonly KANBAN_KEY = 'kanban';
   private readonly BOARD_TITLE_KEY = 'boardTitle';
