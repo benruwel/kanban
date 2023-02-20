@@ -1,1 +1,26 @@
 /* You can add global styles to this file, and also import other style files */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body {
+  font-family: Inter, sans-serif;
+}
+
+/* font sizing */
+h1 {
+  @apply text-2xl md:text-3xl font-semibold;
+}
+
+h2 {
+  @apply text-xl md:text-2xl font-medium;
+}
+
+h3 {
+  @apply text-lg  font-medium md:text-xl;
+}
+
+p {
+  @apply text-sm md:text-base;
+}
