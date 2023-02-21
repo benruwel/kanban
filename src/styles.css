@@ -24,3 +24,7 @@ h3 {
 p {
   @apply text-sm md:text-base;
 }
+
+.btn-scaling {
+  @apply transform ease-in-out duration-200 hover:scale-110 focus:scale-90;
+}

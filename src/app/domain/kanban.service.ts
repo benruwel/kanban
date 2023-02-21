@@ -1,8 +1,10 @@
-import { BehaviorSubject } from 'rxjs';
 import { inject, Injectable } from '@angular/core';
+import { BehaviorSubject } from 'rxjs';
+
+import { nanoid } from 'nanoid';
+
 import { KanbanRepository } from './kanban.repository';
 import { Column, Task } from './kanban';
-import { nanoid } from 'nanoid';
 
 @Injectable({ providedIn: 'root' })
 export class KanbanService {
@@ -24,6 +26,10 @@ export class KanbanService {
     }
     const title = this.repository.getTitle();
     this.title.next(title);
+    return {
+      columns,
+      title,
+    };
   }
 
   updateBoardTitle(title: string) {
@@ -46,6 +52,7 @@ export class KanbanService {
     }
     const subjColumn = columns[index];
     subjColumn.title = newTitle;
+    subjColumn.updatedAt = new Date();
     const updatedColumns = this.repository.updateColumn(subjColumn);
     this.columns.next(this.sort(updatedColumns) as Array<Column>);
   }
@@ -77,6 +84,41 @@ export class KanbanService {
       updatedAt: new Date(),
     };
     subjColumn.tasks.push(newTask);
+    const updatedColumns = this.repository.updateColumn(subjColumn);
+    this.columns.next(this.sort(updatedColumns) as Array<Column>);
+  }
+
+  updateTaskContent(columnId: string, taskId: string, content: string) {
+    const columns = this.columns.getValue();
+    const index = columns.findIndex((c) => c.id === columnId);
+    if (index === -1) {
+      return;
+    }
+    const subjColumn = columns[index];
+    const taskIndex = subjColumn.tasks.findIndex((t) => t.id === taskId);
+    if (taskIndex === -1) {
+      return;
+    }
+    const subjTask = subjColumn.tasks[taskIndex];
+    const newTask: Task = {
+      ...subjTask,
+      content,
+      updatedAt: new Date(),
+    };
+
+    subjColumn.tasks[taskIndex] = newTask;
+    const updatedColumns = this.repository.updateColumn(subjColumn);
+    this.columns.next(this.sort(updatedColumns) as Array<Column>);
+  }
+
+  deleteTask(columnId: string, taskId: string) {
+    const columns = this.columns.getValue();
+    const index = columns.findIndex((c) => c.id === columnId);
+    if (index === -1) {
+      return;
+    }
+    const subjColumn = columns[index];
+    subjColumn.tasks = subjColumn.tasks.filter((task) => task.id !== taskId);
     const updatedColumns = this.repository.updateColumn(subjColumn);
     this.columns.next(this.sort(updatedColumns) as Array<Column>);
   }

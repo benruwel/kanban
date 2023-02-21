@@ -49,7 +49,16 @@ export class KanbanRepository {
     if (!columns) {
       return [];
     }
-    return JSON.parse(columns);
+    try {
+      return JSON.parse(columns);
+    } catch {
+      /*  
+          parse error possibly due to corrupted input
+          solution: nuke local storage and reset
+      */
+      localStorage.setItem(this.KANBAN_KEY, JSON.stringify([]));
+      return [];
+    }
   }
 
   updateColumn(column: Column): Column[] {
