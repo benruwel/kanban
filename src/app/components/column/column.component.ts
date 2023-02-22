@@ -1,6 +1,6 @@
-import { distinctUntilChanged, debounceTime } from 'rxjs';
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { FormControl, Validators } from '@angular/forms';
+import { distinctUntilChanged, debounceTime } from 'rxjs';
 
 import { Column } from '../../domain/kanban';
 
@@ -8,6 +8,9 @@ import { Column } from '../../domain/kanban';
   selector: 'column',
   template: `
     <article
+      [id]="column.id"
+      (drop)="onDrop($event)"
+      (dragover)="onDragOver($event)"
       class="relative max-h-full w-72 border border-gray-200 bg-gray-100 rounded-xl overflow-y-scroll"
     >
       <div
@@ -90,6 +93,11 @@ export class ColumnComponent implements OnInit {
   @Output() updateColumnTitle = new EventEmitter<string>();
 
   @Output() addTask = new EventEmitter<string>();
+  @Output() moveTask = new EventEmitter<{
+    taskId: string;
+    fromColumnId: string;
+    toColumnId: string;
+  }>();
   @Output() updateTaskContent = new EventEmitter<{
     taskId: string;
     content: string;
@@ -108,7 +116,7 @@ export class ColumnComponent implements OnInit {
   ngOnInit() {
     this.columnTitleCtrl.setValue(this.column.title);
     this.columnTitleCtrl.valueChanges
-      .pipe(distinctUntilChanged(), debounceTime(2000))
+      .pipe(debounceTime(1000), distinctUntilChanged())
       .subscribe({
         next: (value) => {
           if (value !== '' && value !== null && value !== this.column.title) {
@@ -116,5 +124,27 @@ export class ColumnComponent implements OnInit {
           }
         },
       });
+  }
+
+  onDrop(event: DragEvent) {
+    event.preventDefault();
+    if (!event.dataTransfer) {
+      return;
+    }
+    const taskId = event.dataTransfer.getData('taskId');
+    const columnId = event.dataTransfer.getData('columnId');
+    this.moveTask.emit({
+      taskId: taskId,
+      fromColumnId: columnId,
+      toColumnId: this.column.id,
+    });
+  }
+
+  onDragOver(event: DragEvent) {
+    event.preventDefault();
+    if (!event.dataTransfer) {
+      return;
+    }
+    event.dataTransfer.dropEffect = 'move';
   }
 }

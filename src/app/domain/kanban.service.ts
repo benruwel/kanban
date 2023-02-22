@@ -88,6 +88,29 @@ export class KanbanService {
     this.columns.next(this.sort(updatedColumns) as Array<Column>);
   }
 
+  moveTask(taskId: string, fromColumnId: string, toColumnId: string) {
+    const allColumns = this.columns.getValue();
+    const fromColIndex = allColumns.findIndex((col) => col.id === fromColumnId);
+    const toColIndex = allColumns.findIndex((col) => col.id === toColumnId);
+    if (fromColIndex === -1 || toColIndex === -1) {
+      return;
+    }
+
+    const fromColumn = allColumns[fromColIndex];
+    const toColumn = allColumns[toColIndex];
+    const subjTask = fromColumn.tasks.find((task) => task.id === taskId);
+    if (!subjTask) {
+      return;
+    }
+    subjTask.columnId = toColumnId;
+    fromColumn.tasks = fromColumn.tasks.filter((task) => task.id !== taskId);
+    toColumn.tasks.push(subjTask);
+    this.repository.updateColumn(fromColumn);
+    const updatedColumns = this.repository.updateColumn(toColumn);
+
+    this.columns.next(this.sort(updatedColumns) as Array<Column>);
+  }
+
   updateTaskContent(columnId: string, taskId: string, content: string) {
     const columns = this.columns.getValue();
     const index = columns.findIndex((c) => c.id === columnId);
@@ -99,14 +122,9 @@ export class KanbanService {
     if (taskIndex === -1) {
       return;
     }
-    const subjTask = subjColumn.tasks[taskIndex];
-    const newTask: Task = {
-      ...subjTask,
-      content,
-      updatedAt: new Date(),
-    };
 
-    subjColumn.tasks[taskIndex] = newTask;
+    subjColumn.tasks[taskIndex].content = content;
+    subjColumn.tasks[taskIndex].updatedAt = new Date();
     const updatedColumns = this.repository.updateColumn(subjColumn);
     this.columns.next(this.sort(updatedColumns) as Array<Column>);
   }

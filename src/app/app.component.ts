@@ -59,6 +59,13 @@ import { KanbanService } from './domain/kanban.service';
                       $event.content
                     )
                   "
+                  (moveTask)="
+                    viewModel.moveTask(
+                      $event.taskId,
+                      $event.fromColumnId,
+                      $event.toColumnId
+                    )
+                  "
                   (deleteTask)="
                     viewModel.deleteTask($event.columnId, $event.taskId)
                   "
@@ -105,7 +112,7 @@ export class AppComponent implements OnInit {
     const title = this.viewModel.init().title;
     this.boardTitleCtrl.setValue(title);
     this.boardTitleCtrl.valueChanges
-      .pipe(distinctUntilChanged(), debounceTime(1000))
+      .pipe(debounceTime(1000), distinctUntilChanged())
       .subscribe({
         next: (value) => {
           if (value !== '' && value !== null) {
