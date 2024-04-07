@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, effect, EventEmitter, input, OnInit, output, Output } from "@angular/core";
+import { Component, effect, input, OnInit, output } from "@angular/core";
 import { DatePipe } from "@angular/common";
 import { FormControl, ReactiveFormsModule, Validators } from "@angular/forms";
 import { debounceTime, distinctUntilChanged } from "rxjs";
@@ -62,7 +62,7 @@ export class TaskComponent implements OnInit {
   task = input.required<Task>();
 
 
-  updateContent = output<{
+   updateContent = output<{
     columnId: string;
     taskId: string;
     content: string;
@@ -81,7 +81,6 @@ export class TaskComponent implements OnInit {
 
   constructor() {
     effect(() => {
-      console.log('Task updated');
       this.contentCtrl.setValue(this.task().content);
     });
   }

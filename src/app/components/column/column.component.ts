@@ -1,8 +1,8 @@
-import { Component, DestroyRef, EventEmitter, inject, input, Input, OnInit, output, Output } from "@angular/core";
+import { Component, DestroyRef, inject, input, OnInit, output } from "@angular/core";
 import { FormControl, ReactiveFormsModule, Validators } from "@angular/forms";
 import { NgForOf, NgIf } from "@angular/common";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { distinctUntilChanged, debounceTime } from 'rxjs';
+import { debounceTime, distinctUntilChanged } from "rxjs";
 
 import { Column } from "../../domain";
 import { TaskComponent } from "./task.component";
@@ -71,7 +71,6 @@ import { TaskComponent } from "./task.component";
       </div>
 
       <div class="flex flex-col space-y-2 p-2 overflow-y-auto">
-
           @for(task of column().tasks; track task.id) {
             <task
               [task]="task"
