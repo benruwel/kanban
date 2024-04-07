@@ -1,11 +1,15 @@
-import { Component, inject, OnInit } from '@angular/core';
-import { FormControl, Validators } from '@angular/forms';
-import { debounceTime, distinctUntilChanged } from 'rxjs';
+import { Component, DestroyRef, inject, OnInit } from "@angular/core";
+import { FormControl, ReactiveFormsModule, Validators } from "@angular/forms";
+import { AsyncPipe, NgForOf, NgIf } from "@angular/common";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
+import { debounceTime, distinctUntilChanged } from "rxjs";
 
-import { KanbanService } from './domain/kanban.service';
+import { KanbanService } from "./domain";
+import { ColumnComponent } from "./components/column/column.component";
 
 @Component({
-  selector: 'app-root',
+  selector: "app-root",
+  standalone: true,
   template: `
     <main class="p-4 flex flex-col space-y-4 h-screen overflow-hidden md:p-8">
       <div class="flex flex-row space-x-4 items-center justify-between">
@@ -32,57 +36,53 @@ import { KanbanService } from './domain/kanban.service';
         class="flex-1 flex flex-row space-x-2 p-2 rounded-xl border border-gray-300 border-dashed overflow-x-auto snap-x overflow-y-hidden md:space-x-4 md:p-4"
       >
         <ng-container *ngIf="columns$ | async as columns">
-          <ng-container *ngIf="!columns.length">
-            <div
-              class="w-full h-fit p-4 rounded-lg bg-gray-100 border border-gray-200"
-            >
-              <span class="text-sm  text-gray-400"
-                >New board? Add a column to get started.</span
-              >
-            </div>
-          </ng-container>
-
-          <ng-container *ngIf="columns.length">
-            <ng-container *ngFor="let column of columns">
-              <div class="snap-start scroll-ml-2 md:scroll-m-4">
-                <column
-                  [column]="column"
-                  (delete)="viewModel.deleteColumn($event)"
-                  (updateColumnTitle)="
+          @for(column of columns; track column.id) {
+            <div class="snap-start scroll-ml-2 md:scroll-m-4">
+              <column
+                [column]="column"
+                (delete)="viewModel.deleteColumn($event)"
+                (updateColumnTitle)="
                     viewModel.updateColumnTitle($event, column.id)
                   "
-                  (addTask)="viewModel.createTask(column.id)"
-                  (updateTaskContent)="
+                (addTask)="viewModel.createTask(column.id)"
+                (updateTaskContent)="
                     viewModel.updateTaskContent(
                       $event.columnId,
                       $event.taskId,
                       $event.content
                     )
                   "
-                  (moveTask)="
+                (moveTask)="
                     viewModel.moveTask(
                       $event.taskId,
                       $event.fromColumnId,
                       $event.toColumnId
                     )
                   "
-                  (deleteTask)="
+                (deleteTask)="
                     viewModel.deleteTask($event.columnId, $event.taskId)
                   "
-                ></column>
-              </div>
-            </ng-container>
-          </ng-container>
+              ></column>
+            </div>
+          } @empty {
+            <div
+              class="w-full h-fit p-4 rounded-lg bg-gray-100 border border-gray-200"
+            >
+              <span class="text-sm  text-gray-400"
+              >New board? Add a column to get started.</span
+              >
+            </div>
+          }
         </ng-container>
       </section>
 
       <footer class="flex flex-row space-x-2 items-center justify-between">
         <span class="text-xs font-medium"
-          >Kanban board built with ❤️ by
+        >Kanban board built with ❤️ by
           <a
             href="https://benruwel.vercel.app/"
             class="underline underline-offset-1medium"
-            >Ben</a
+          >Ben</a
           >
         </span>
         <div class="block md:hidden">
@@ -96,11 +96,18 @@ import { KanbanService } from './domain/kanban.service';
       </footer>
     </main>
   `,
+  imports: [
+    ReactiveFormsModule,
+    AsyncPipe,
+    NgIf,
+    NgForOf,
+    ColumnComponent
+  ]
 })
 export class AppComponent implements OnInit {
+  private destroyRef = inject(DestroyRef);
   public viewModel = inject(KanbanService);
 
-  public boardTitle$ = this.viewModel.title$;
   public columns$ = this.viewModel.columns$;
 
   public boardTitleCtrl = new FormControl('', [
@@ -112,7 +119,7 @@ export class AppComponent implements OnInit {
     const title = this.viewModel.init().title;
     this.boardTitleCtrl.setValue(title);
     this.boardTitleCtrl.valueChanges
-      .pipe(debounceTime(1000), distinctUntilChanged())
+      .pipe(takeUntilDestroyed(this.destroyRef),debounceTime(1000), distinctUntilChanged())
       .subscribe({
         next: (value) => {
           if (value !== '' && value !== null) {

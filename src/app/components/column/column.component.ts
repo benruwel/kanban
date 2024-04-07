@@ -1,14 +1,18 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
-import { FormControl, Validators } from '@angular/forms';
+import { Component, DestroyRef, EventEmitter, inject, input, Input, OnInit, output, Output } from "@angular/core";
+import { FormControl, ReactiveFormsModule, Validators } from "@angular/forms";
+import { NgForOf, NgIf } from "@angular/common";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { distinctUntilChanged, debounceTime } from 'rxjs';
 
-import { Column } from '../../domain/kanban';
+import { Column } from "../../domain";
+import { TaskComponent } from "./task.component";
 
 @Component({
-  selector: 'column',
+  selector: "column",
+  standalone: true,
   template: `
     <article
-      [id]="column.id"
+      [id]="column().id"
       (drop)="onDrop($event)"
       (dragover)="onDragOver($event)"
       class="relative max-h-full w-72 border border-gray-200 bg-gray-100 rounded-xl overflow-y-scroll"
@@ -18,7 +22,7 @@ import { Column } from '../../domain/kanban';
       >
         <input
           [formControl]="columnTitleCtrl"
-          [id]="column.id"
+          [id]="column().id"
           type="text"
           name="column-title"
           placeholder="Column Title"
@@ -26,7 +30,7 @@ import { Column } from '../../domain/kanban';
         />
         <div class="flex-shrink-0 flex flex-row space-x-2">
           <button
-            (click)="addTask.emit(column.id)"
+            (click)="addTask.emit(column().id)"
             class="btn-scaling flex justify-center items-center p-1 w-6 h-6 bg-gray-200 rounded-md"
           >
             <svg
@@ -45,7 +49,7 @@ import { Column } from '../../domain/kanban';
             </svg>
           </button>
           <button
-            (click)="delete.emit(column.id)"
+            (click)="delete.emit(column().id)"
             class="btn-scaling flex justify-center items-center p-1 w-6 h-6 bg-red-200 text-red-700 rounded-md"
           >
             <svg
@@ -67,43 +71,50 @@ import { Column } from '../../domain/kanban';
       </div>
 
       <div class="flex flex-col space-y-2 p-2 overflow-y-auto">
-        <ng-container *ngIf="!column.tasks.length">
-          <div class="p-4 w-full rounded-lg bg-gray-200 border border-gray-300">
-            <p class="text-sm text-gray-500">
-              Get started by creating a new task
-            </p>
-          </div>
-        </ng-container>
-        <ng-container *ngIf="column.tasks.length">
-          <ng-container *ngFor="let task of column.tasks">
+
+          @for(task of column().tasks; track task.id) {
             <task
               [task]="task"
               (updateContent)="updateTaskContent.emit($event)"
               (delete)="deleteTask.emit($event)"
             ></task>
-          </ng-container>
-        </ng-container>
+          } @empty {
+            <div class="p-4 w-full rounded-lg bg-gray-200 border border-gray-300">
+              <p class="text-sm text-gray-500">
+                Get started by creating a new task
+              </p>
+            </div>
+          }
       </div>
     </article>
   `,
+  imports: [
+    ReactiveFormsModule,
+    NgIf,
+    NgForOf,
+    TaskComponent
+  ]
 })
 export class ColumnComponent implements OnInit {
-  @Input() column!: Column;
-  @Output() delete = new EventEmitter<string>();
-  @Output() updateColumnTitle = new EventEmitter<string>();
+  private destroyRef = inject(DestroyRef);
 
-  @Output() addTask = new EventEmitter<string>();
-  @Output() moveTask = new EventEmitter<{
+  column = input.required<Column>();
+
+  delete = output<string>();
+  updateColumnTitle = output<string>();
+
+  addTask = output<string>();
+  moveTask = output<{
     taskId: string;
     fromColumnId: string;
     toColumnId: string;
   }>();
-  @Output() updateTaskContent = new EventEmitter<{
+  updateTaskContent = output<{
     taskId: string;
     content: string;
     columnId: string;
-  }>();
-  @Output() deleteTask = new EventEmitter<{
+  }>()
+  deleteTask = output<{
     taskId: string;
     columnId: string;
   }>();
@@ -114,12 +125,12 @@ export class ColumnComponent implements OnInit {
   ]);
 
   ngOnInit() {
-    this.columnTitleCtrl.setValue(this.column.title);
+    this.columnTitleCtrl.setValue(this.column().title);
     this.columnTitleCtrl.valueChanges
-      .pipe(debounceTime(1000), distinctUntilChanged())
+      .pipe(takeUntilDestroyed(this.destroyRef),debounceTime(1000), distinctUntilChanged())
       .subscribe({
         next: (value) => {
-          if (value !== '' && value !== null && value !== this.column.title) {
+          if (value !== '' && value !== null && value !== this.column().title) {
             this.updateColumnTitle.emit(value);
           }
         },
@@ -136,7 +147,7 @@ export class ColumnComponent implements OnInit {
     this.moveTask.emit({
       taskId: taskId,
       fromColumnId: columnId,
-      toColumnId: this.column.id,
+      toColumnId: this.column().id,
     });
   }
 

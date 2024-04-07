@@ -1,20 +1,13 @@
-import {
-  Component,
-  Input,
-  OnInit,
-  Output,
-  EventEmitter,
-  ChangeDetectionStrategy,
-  OnChanges,
-  SimpleChanges,
-} from '@angular/core';
-import { FormControl, Validators } from '@angular/forms';
-import { distinctUntilChanged, debounceTime } from 'rxjs';
-import { Task } from 'src/app/domain';
+import { ChangeDetectionStrategy, Component, effect, EventEmitter, input, OnInit, output, Output } from "@angular/core";
+import { DatePipe } from "@angular/common";
+import { FormControl, ReactiveFormsModule, Validators } from "@angular/forms";
+import { debounceTime, distinctUntilChanged } from "rxjs";
+
+import { Task } from "../../domain";
 
 @Component({
-  selector: 'task',
-  changeDetection: ChangeDetectionStrategy.OnPush,
+  selector: "task",
+  standalone: true,
   template: `
     <!-- ngClass="{'opacity-50 scale-110 cursor-grabbing': !isDragging, 'cursor-grab scale-100': isDragging}" -->
     <div
@@ -24,7 +17,7 @@ import { Task } from 'src/app/domain';
       class="flex flex-col space-y-2 w-full h-36 p-1 rounded-lg border border-gray-200 bg-white cursor-grab transform ease-in-out duration-100 focus-within:ring-4 focus-within:ring-purple-200"
     >
       <textarea
-        [id]="task.id"
+        [id]="task().id"
         [formControl]="contentCtrl"
         name="content"
         cols="30"
@@ -33,11 +26,11 @@ import { Task } from 'src/app/domain';
       ></textarea>
       <div class="flex flex-row space-x-1 items-center justify-between">
         <div
-          [title]="task.updatedAt | date : 'medium'"
+          [title]="task().updatedAt | date : 'medium'"
           class="px-2 py-0.5 bg-gray-100 border border-gray-200 rounded-full text-xs"
         >
-          {{ task.updatedAt | date : 'shortTime' }} &bull;
-          {{ task.updatedAt | date : 'shortDate' }}
+          {{ task().updatedAt | date : 'shortTime' }} &bull;
+          {{ task().updatedAt | date : 'shortDate' }}
         </div>
         <button
           (click)="onDelete()"
@@ -60,16 +53,21 @@ import { Task } from 'src/app/domain';
       </div>
     </div>
   `,
+  imports: [
+    ReactiveFormsModule,
+    DatePipe
+  ]
 })
-export class TaskComponent implements OnInit, OnChanges {
-  @Input() task!: Task;
+export class TaskComponent implements OnInit {
+  task = input.required<Task>();
 
-  @Output() updateContent = new EventEmitter<{
+
+  updateContent = output<{
     columnId: string;
     taskId: string;
     content: string;
   }>();
-  @Output() delete = new EventEmitter<{
+  delete = output<{
     taskId: string;
     columnId: string;
   }>();
@@ -81,11 +79,13 @@ export class TaskComponent implements OnInit, OnChanges {
 
   isDragging = false;
 
-  ngOnChanges(changes: SimpleChanges) {
-    if (changes['task']) {
-      this.contentCtrl.setValue(changes['task'].currentValue.content);
-    }
+  constructor() {
+    effect(() => {
+      console.log('Task updated');
+      this.contentCtrl.setValue(this.task().content);
+    });
   }
+
 
   ngOnInit() {
     this.contentCtrl.valueChanges
@@ -94,8 +94,8 @@ export class TaskComponent implements OnInit, OnChanges {
         next: (value) => {
           if (this.contentCtrl.valid && value !== null && value !== '') {
             this.updateContent.emit({
-              columnId: this.task.columnId,
-              taskId: this.task.id,
+              columnId: this.task().columnId,
+              taskId: this.task().id,
               content: value,
             });
           }
@@ -108,8 +108,8 @@ export class TaskComponent implements OnInit, OnChanges {
     if (!event.dataTransfer) {
       return;
     }
-    event.dataTransfer.setData('taskId', this.task.id);
-    event.dataTransfer.setData('columnId', this.task.columnId);
+    event.dataTransfer.setData('taskId', this.task().id);
+    event.dataTransfer.setData('columnId', this.task().columnId);
     event.dataTransfer.effectAllowed = 'move';
   }
 
@@ -119,8 +119,8 @@ export class TaskComponent implements OnInit, OnChanges {
 
   onDelete() {
     this.delete.emit({
-      taskId: this.task.id,
-      columnId: this.task.columnId,
+      taskId: this.task().id,
+      columnId: this.task().columnId,
     });
   }
 }
