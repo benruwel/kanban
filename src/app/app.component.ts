@@ -3,11 +3,11 @@ import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AsyncPipe, NgForOf, NgIf } from '@angular/common';
 import { Platform } from '@angular/cdk/platform';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { SwUpdate, VersionReadyEvent } from '@angular/service-worker';
 import { debounceTime, distinctUntilChanged, filter, map } from 'rxjs';
 
 import { KanbanService } from './domain';
 import { ColumnComponent } from './components/column/column.component';
-import { SwUpdate, VersionReadyEvent } from '@angular/service-worker';
 import { UpdateModalComponent } from './components/update-modal.component';
 
 @Component({
@@ -19,9 +19,7 @@ import { UpdateModalComponent } from './components/update-modal.component';
     >
       @if(showModalUpdate()) {
       <update-modal />
-      }
-
-      @if(devicePlatform() !== null) {
+      } @if(devicePlatform() !== null) {
       <div
         class="w-full bg-gray-50 text-gray-500 text-center flex flex-row gap-4 items-center "
       >
